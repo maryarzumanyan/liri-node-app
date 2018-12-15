@@ -1,13 +1,11 @@
-// At the top of the liri.js file, add code to read and set any environment variables with the dotenv package:
 require("dotenv").config();
 var fs = require("fs");
 var request = require("request");
 var keys = require("./keys.js");
 var Spotify = require('node-spotify-api');
 var inquirer = require("inquirer");
+var moment = require('moment');
 
-
-// Add the code required to import the keys.js file and store it in a variable. You should then be able to access your keys information like so:
 var spotify = new Spotify(keys.spotify);
 
 inquirer
@@ -22,6 +20,17 @@ inquirer
   .then(function(inquirerResponse) {
         if(inquirerResponse.commands === "concert-this")
         {
+            inquirer
+            .prompt([
+                {
+                type: "input",
+                message: "artist/band name here",
+                name: "artist"
+                }
+            ])
+            .then(function(inquirerResponse) {
+                ConcertThis(inquirerResponse.artist);
+            })
 
         }
 
@@ -36,7 +45,14 @@ inquirer
                 }
             ])
             .then(function(inquirerResponse) {
-                SpotifyThis(inquirerResponse.song);
+                if(inquirerResponse.song != "")
+                {
+                    SpotifyThis(inquirerResponse.song);
+                }
+                else{
+                    SpotifyThis("The Sign");
+                }
+                
             })
         }
 
@@ -51,7 +67,13 @@ inquirer
                 }
             ])
             .then(function(inquirerResponse) {
-                IMDB(inquirerResponse.movie);
+                if(inquirerResponse.movie != "")
+                {
+                    IMDB(inquirerResponse.movie);
+                }
+                else{
+                    IMDB("Mr. Nobody");                    
+                }
             })
         }
 
@@ -64,7 +86,7 @@ inquirer
                 var value = dataArr[1].slice(1, -1);
                 if(dataArr[0] === "concert-this")
                 {
-
+                    ConcertThis(value);
                 }
                 else if(dataArr[0] === "spotify-this-song")
                 {
@@ -80,6 +102,21 @@ inquirer
     
   });
 
+  function ConcertThis(artist){
+ //     request("https://rest.bandsintown.com/artists/" + artist + "/events?app_id=codingbootcamp", function(error, response, body) {
+      request("https://rest.bandsintown.com/artists/" + artist + "/events?app_id=" + keys.bands.app_id, function(error, response, body) {
+        if (!error && response.statusCode === 200) {
+            for(var index in  JSON.parse(body))
+            {
+                Log("\nName of the venue: " + JSON.parse(body)[index].venue.name);
+                Log("Venue location: " + JSON.parse(body)[index].venue.country + ", " + JSON.parse(body)[index].venue.region + ", " + JSON.parse(body)[index].venue.city);
+                Log("Date of the Event: " + moment(JSON.parse(body)[index].datetime).format('M/D/YYYY'));
+                
+            }
+        }
+      });
+
+  }
 
 
   function SpotifyThis(song){
@@ -87,13 +124,13 @@ inquirer
             if (err) {
             return console.log('Error occurred: ' + err);
             }
-
+            
             for(var index in data.tracks.items)
             {
-                console.log("\nartist(s): " + data.tracks.items[index].artists[0].name);
-                console.log("\nsong: " + data.tracks.items[index].name);
-                console.log("\npreview url: " + data.tracks.items[index].preview_url);
-                console.log("\nalbum: " + data.tracks.items[index].album.name);
+                Log("\nartist(s): " + data.tracks.items[index].artists[0].name);
+                Log("song: " + data.tracks.items[index].name);
+                Log("preview url: " + data.tracks.items[index].preview_url);
+                Log("album: " + data.tracks.items[index].album.name);
             }
             
         });
@@ -101,18 +138,28 @@ inquirer
 
   function IMDB(movie){
     request("http://www.omdbapi.com/?t=" + movie + "&y=&plot=short&apikey=trilogy", function(error, response, body) {
-
-        // If the request is successful (i.e. if the response status code is 200)
+        
         if (!error && response.statusCode === 200) {
-          console.log("Title of the movie: " + JSON.parse(body).Title);
-          console.log("Year the movie came out: " + JSON.parse(body).Year);
-          console.log("IMDB Rating of the movie: " + JSON.parse(body).imdbRating);
-          console.log("Rotten Tomatoes Rating of the movie: " + JSON.parse(body).Ratings[1].Value);
-          console.log("Country where the movie was produced: " + JSON.parse(body).Country);
-          console.log("Language of the movie: " + JSON.parse(body).Language);
-          console.log("Plot of the movie: " + JSON.parse(body).Plot);
-          console.log("Actors in the movie: " + JSON.parse(body).Actors);
+
+          Log("Title of the movie: " + JSON.parse(body).Title);
+          Log("Year the movie came out: " + JSON.parse(body).Year);
+          Log("IMDB Rating of the movie: " + JSON.parse(body).imdbRating);
+          Log("Rotten Tomatoes Rating of the movie: " + JSON.parse(body).Ratings[1].Value);
+          Log("Country where the movie was produced: " + JSON.parse(body).Country);
+          Log("Language of the movie: " + JSON.parse(body).Language);
+          Log("Plot of the movie: " + JSON.parse(body).Plot);
+          Log("Actors in the movie: " + JSON.parse(body).Actors);
 
         }
       });
+  }
+
+  function Log(text){
+      console.log(text);
+      fs.appendFile("sample.txt", text, function(err) {
+        if (err) {
+          console.log(err);
+        }
+      });   
+
   }
