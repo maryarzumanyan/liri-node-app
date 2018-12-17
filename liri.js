@@ -156,7 +156,7 @@ inquirer
 
   function Log(text){
       console.log(text);
-      fs.appendFile("sample.txt", text, function(err) {
+      fs.appendFile("sample.txt", "\r\n" + text, function(err) {
         if (err) {
           console.log(err);
         }
